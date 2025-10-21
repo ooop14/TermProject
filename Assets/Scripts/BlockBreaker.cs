@@ -32,9 +32,9 @@ public class BlockBreaker : MonoBehaviour
             Instantiate(dirtItemPrefab, itemSpawnPos, Quaternion.identity);
         }
         // 3. 만약 앞쪽 땅이 비어있다면, 뒤쪽 배경벽(BackgroundWall)을 부숩니다.
-        else if (backgroundTilemap.GetTile(cellPosition) != null)
+        else if (backgroundTilemap != null && backgroundTilemap.GetTile(cellPosition) != null)
         {
-            // 배경벽은 아이템을 드랍하지 않는다고 가정합니다.
+            Debug.Log("배경벽을 파괴합니다.");
             backgroundTilemap.SetTile(cellPosition, null);
         }
     }
