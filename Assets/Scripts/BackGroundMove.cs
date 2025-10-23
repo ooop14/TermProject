@@ -58,19 +58,7 @@ public class BackgroundMove : MonoBehaviour
             float cameraEdgeYUpPos = Camera.main.transform.position.y + halfViewPortYSize;
             float cameraEdgeYDownPos = Camera.main.transform.position.y - halfViewPortYSize;
  
-            // 플레이어가 위쪽으로 이동하다가 배경 스프라이트를 옮기는 경우
-            if (cameraEdgeYUpPos >= bgEdgeYUpPos - offset)
-            {
-                Vector3 pos = transform.position;
-                transform.position = new Vector3(pos.x, cameraEdgeYDownPos + transform.localScale.y / 2 - offset * 2, pos.z);
-            }
-            // 플레이어가 아래쪽으로 이동하다가 배경 스프라이트를 옮기는 경우
-            else if (cameraEdgeYDownPos <= bgEdgeYDownPos + offset)
-            {
-                Vector3 pos = transform.position;
-                transform.position = new Vector3(pos.x, cameraEdgeYUpPos - transform.localScale.y / 2 + offset * 2, pos.z);
-            }
- 
+            
             yield return new WaitForSeconds(CHECK_SECONDS);
         }
     }
