@@ -1,125 +1,243 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem; // 1. InputSystem 사용을 위해 추가!
+using UnityEngine.InputSystem;
 using UnityEngine.Tilemaps;
 
 public class BlockBreaker : MonoBehaviour
 {
-    // --- 기존 변수들 ---
+    // --- 타일맵 변수 ---
     public Tilemap groundTilemap;
     public Tilemap backgroundTilemap;
-    public GameObject dirtItemPrefab;
+    
+    [Header("아이템 프리팹")]
+    public GameObject dirtItemPrefab;   // 흙 아이템
+    public GameObject woodItemPrefab;   // 나무 아이템
+    
     private Camera mainCamera;
 
-    // --- 새로 추가된 변수들 ---
+    // --- 파괴 시간 변수 ---
     [Tooltip("블록을 부수는 데 걸리는 시간(초)")]
-    public float requiredBreakTime = 1.0f; // 1초
-    private float currentBreakTime = 0f;     // 현재 누르고 있는 시간 (타이머)
-    private Vector3Int currentBreakingBlockPos; // 현재 부수고 있는 블록의 좌표
-    private bool isBreaking = false;         // 현재 무언가를 부수고 있는지 여부
+    public float requiredBreakTime = 1.0f;
+    private float currentBreakTime = 0f;
+    private Vector3Int currentBreakingBlockPos;
+    private bool isBreaking = false;
+
+    // --- 파괴 애니메이션 변수 ---
+    [Header("파괴 애니메이션")]
+    public GameObject breakIndicatorObject;
+    public Sprite[] breakCrackSprites;
+    private SpriteRenderer breakIndicatorRenderer;
+
+    // --- 연쇄 파괴 변수 ---
+    [Header("연쇄 파괴 설정")]
+    public TileBase[] treeTiles;
+    public TileBase[] breakableTreeTrunks;
+
+    private HashSet<TileBase> treeTileSet;
+    private HashSet<TileBase> breakableTrunkSet;
+
+    // --- Start, Helper Functions, Update (기존과 동일) ---
 
     void Start()
     {
         mainCamera = Camera.main;
+        treeTileSet = new HashSet<TileBase>(treeTiles);
+        breakableTrunkSet = new HashSet<TileBase>(breakableTreeTrunks);
+        if (breakIndicatorObject != null)
+        {
+            breakIndicatorRenderer = breakIndicatorObject.GetComponent<SpriteRenderer>();
+            breakIndicatorObject.SetActive(false);
+        }
     }
 
-    // 2. 마우스 입력을 매 프레임 확인하기 위해 Update() 함수 추가
-    void Update()
+    private bool IsBreakableTrunk(TileBase tile)
     {
-        // 3. 마우스 왼쪽 버튼이 '눌려있는지' 확인 (새로운 Input System 방식)
-        if (Mouse.current.leftButton.isPressed)
-        {
-            // 4. 마우스 위치의 타일 좌표 가져오기
-            Vector3Int cellPosition = GetMouseCellPosition();
-
-            // 5. 처음 클릭했거나, 마우스를 다른 블록으로 옮겼는지 확인
-            if (!isBreaking || cellPosition != currentBreakingBlockPos)
-            {
-                // 새로운 블록을 부수기 시작 -> 타이머 리셋
-                currentBreakingBlockPos = cellPosition;
-                currentBreakTime = 0f;
-                isBreaking = true;
-            }
-            else // 6. 같은 블록을 계속 누르고 있음
-            {
-                // 타이머 증가
-                currentBreakTime += Time.deltaTime;
-
-                // (여기에 블록 금 가는 효과를 넣으면 좋습니다)
-
-                // 7. 시간이 다 되었는지 확인
-                if (currentBreakTime >= requiredBreakTime)
-                {
-                    // 블록 파괴 코루틴 실행!
-                    StartCoroutine(BreakBlockRoutine(currentBreakingBlockPos));
-                    
-                    // 타이머와 상태 리셋
-                    currentBreakTime = 0f;
-                    isBreaking = false;
-                }
-            }
-        }
-        else // 8. 마우스를 뗐음
-        {
-            // 모든 진행 상황 초기화
-            if (isBreaking)
-            {
-                currentBreakTime = 0f;
-                isBreaking = false;
-                // (여기서 블록 금 간 효과를 리셋합니다)
-            }
-        }
+        return tile != null && breakableTrunkSet.Contains(tile);
     }
-
-    // 9. 마우스 위치를 타일 좌표로 변환하는 헬퍼 함수
+    private bool IsTreeTile(TileBase tile)
+    {
+        return tile != null && treeTileSet.Contains(tile);
+    }
     private Vector3Int GetMouseCellPosition()
     {
         Vector3 mouseScreenPos = Mouse.current.position.ReadValue();
         Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(mouseScreenPos);
-        mouseWorldPos.z = 0; // Z축 보정
+        mouseWorldPos.z = 0;
         return groundTilemap.WorldToCell(mouseWorldPos);
     }
 
-    // 10. 기존의 블록 파괴 코루틴 (이전과 동일)
+    void Update()
+    {
+        // (Update 함수 내용은 기존과 완전히 동일합니다)
+        if (Mouse.current.leftButton.isPressed)
+        {
+            Vector3Int cellPosition = GetMouseCellPosition();
+            TileBase clickedTile = groundTilemap.GetTile(cellPosition);
+            if (clickedTile == null && backgroundTilemap != null)
+            {
+                clickedTile = backgroundTilemap.GetTile(cellPosition);
+            }
+
+            bool canStartBreaking = false;
+            if (clickedTile != null)
+            {
+                if (IsTreeTile(clickedTile))
+                {
+                    if (IsBreakableTrunk(clickedTile))
+                        canStartBreaking = true;
+                }
+                else
+                    canStartBreaking = true;
+            }
+
+            if (!canStartBreaking)
+            {
+                if (isBreaking)
+                {
+                    currentBreakTime = 0f;
+                    isBreaking = false;
+                    if (breakIndicatorObject != null)
+                        breakIndicatorObject.SetActive(false);
+                }
+                return;
+            }
+            
+            if (!isBreaking || cellPosition != currentBreakingBlockPos)
+            {
+                currentBreakingBlockPos = cellPosition;
+                currentBreakTime = 0f;
+                isBreaking = true;
+                if (breakIndicatorObject != null)
+                {
+                    breakIndicatorObject.SetActive(true);
+                    breakIndicatorObject.transform.position = groundTilemap.GetCellCenterWorld(cellPosition);
+                    if (breakCrackSprites.Length > 0)
+                        breakIndicatorRenderer.sprite = breakCrackSprites[0];
+                }
+            }
+            else
+            {
+                currentBreakTime += Time.deltaTime;
+                if (breakIndicatorRenderer != null && breakCrackSprites.Length > 0)
+                {
+                    float progress = currentBreakTime / requiredBreakTime;
+                    int crackIndex = Mathf.FloorToInt(progress * breakCrackSprites.Length);
+                    crackIndex = Mathf.Clamp(crackIndex, 0, breakCrackSprites.Length - 1);
+                    breakIndicatorRenderer.sprite = breakCrackSprites[crackIndex];
+                }
+                
+                if (currentBreakTime >= requiredBreakTime)
+                {
+                    StartCoroutine(BreakBlockRoutine(currentBreakingBlockPos));
+                    currentBreakTime = 0f;
+                }
+            }
+        }
+        else
+        {
+            if (isBreaking)
+            {
+                currentBreakTime = 0f;
+                isBreaking = false;
+                if (breakIndicatorObject != null)
+                    breakIndicatorObject.SetActive(false);
+            }
+        }
+    }
+
+    // --- 블록 파괴 로직 (기존과 동일) ---
     private IEnumerator BreakBlockRoutine(Vector3Int cellPosition)
     {
-        bool createItem = false;
         Tilemap tilemapToBreak = null;
+        bool createItem = true; // (이제 createItem은 항상 true입니다)
 
-        // 앞쪽 땅(Ground)을 먼저 확인
         if (groundTilemap.GetTile(cellPosition) != null)
-        {
             tilemapToBreak = groundTilemap;
-            createItem = true; // 땅을 부술 때만 아이템 생성
-        }
-        // 만약 앞쪽 땅이 비어있다면, 뒤쪽 배경벽(BackgroundWall)을 확인
         else if (backgroundTilemap != null && backgroundTilemap.GetTile(cellPosition) != null)
-        {
             tilemapToBreak = backgroundTilemap;
-            createItem = true;
+
+        if (tilemapToBreak == null) yield break;
+
+        TileBase brokenTile = tilemapToBreak.GetTile(cellPosition);
+        if (IsTreeTile(brokenTile))
+        {
+            yield return ChainBreakTreeRoutine(tilemapToBreak, cellPosition, createItem);
+        }
+        else
+        {
+            yield return BreakSingleBlockRoutine(tilemapToBreak, cellPosition, createItem);
+        }
+    }
+
+    // --- 단일 블록 파괴 (흙 아이템 드랍) ---
+    private IEnumerator BreakSingleBlockRoutine(Tilemap tilemap, Vector3Int cellPosition, bool createItem)
+    {
+        tilemap.SetTile(cellPosition, null);
+
+        var collider = tilemap.GetComponent<TilemapCollider2D>();
+        if (collider != null)
+        {
+            collider.enabled = false;
+            yield return null;
+            collider.enabled = true;
         }
 
-        // 부술 타일맵을 찾았다면
-        if (tilemapToBreak != null)
+        if (createItem)
         {
-            // 블록 파괴 (벽지 뜯기)
-            tilemapToBreak.SetTile(cellPosition, null);
+            Vector3 itemSpawnPos = tilemap.GetCellCenterWorld(cellPosition);
+            // 흙 블록은 dirtItemPrefab을 생성
+            Instantiate(dirtItemPrefab, itemSpawnPos, Quaternion.identity);
+        }
+    }
 
-            // 콜라이더 새로고침
-            var collider = tilemapToBreak.GetComponent<TilemapCollider2D>();
-            if (collider != null)
+    // --- ✨ [수정됨!] 나무 연쇄 파괴 (나무 아이템 드랍) ---
+    private IEnumerator ChainBreakTreeRoutine(Tilemap tilemap, Vector3Int startPosition, bool createItem)
+    {
+        Queue<Vector3Int> tilesToBreak = new Queue<Vector3Int>();
+        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
+
+        tilesToBreak.Enqueue(startPosition);
+        visited.Add(startPosition);
+
+        Vector3Int[] neighbors = { Vector3Int.up, Vector3Int.down, Vector3Int.left, Vector3Int.right };
+
+        while (tilesToBreak.Count > 0)
+        {
+            Vector3Int currentPos = tilesToBreak.Dequeue();
+            TileBase currentTile = tilemap.GetTile(currentPos);
+            tilemap.SetTile(currentPos, null);
+
+            // [수정] 아이템 생성 로직: 부순 타일이 '밑동/줄기'일 때만 아이템 생성
+            if (createItem && IsBreakableTrunk(currentTile)) 
             {
-                collider.enabled = false;
-                yield return null;
-                collider.enabled = true;
+                Vector3 itemSpawnPos = tilemap.GetCellCenterWorld(currentPos);
+
+                // 나무 블록은 woodItemPrefab을 생성
+                Instantiate(woodItemPrefab, itemSpawnPos, Quaternion.identity); 
             }
 
-            // 아이템 생성 (필요한 경우)
-            if (createItem)
+            foreach (var offset in neighbors)
             {
-                Vector3 itemSpawnPos = tilemapToBreak.GetCellCenterWorld(cellPosition);
-                Instantiate(dirtItemPrefab, itemSpawnPos, Quaternion.identity);
+                Vector3Int neighborPos = currentPos + offset;
+                if (visited.Contains(neighborPos)) continue;
+                TileBase neighborTile = tilemap.GetTile(neighborPos);
+                
+                if (IsTreeTile(neighborTile))
+                {
+                    tilesToBreak.Enqueue(neighborPos);
+                    visited.Add(neighborPos);
+                }
             }
+        }
+
+        // 콜라이더 새로고침
+        var collider = tilemap.GetComponent<TilemapCollider2D>();
+        if (collider != null)
+        {
+            collider.enabled = false;
+            yield return null;
+            collider.enabled = true;
         }
     }
 }

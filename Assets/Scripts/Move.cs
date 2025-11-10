@@ -38,17 +38,18 @@ public class Move : MonoBehaviour
     // 'Is Trigger'가 켜진 콜라이더와 부딪혔을 때 자동으로 호출되는 함수
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // 1. 부딪힌 오브젝트의 태그가 "Item"인지 확인합니다.
         if (other.CompareTag("Item"))
+    {
+        ItemPickup pickup = other.GetComponent<ItemPickup>();
+
+        if (pickup != null)
         {
-            // 2. "Item"이 맞다면, 부딪힌 그 아이템 오브젝트를 파괴(흡수)합니다.
-            Destroy(other.gameObject);
-            
-            // 3. (확인용) 콘솔에 메시지를 출력합니다.
-            Debug.Log("아이템을 주웠습니다!");
-            
-            // 4. (나중에 할 일) 여기에 인벤토리에 아이템 개수를 1 늘리는 코드를 추가하면 됩니다.
+            Inventory.instance.AddItem(pickup.itemData);
+            Debug.Log($"[획득] {pickup.itemData.itemName}");
         }
+
+        Destroy(other.gameObject);
+    }
     }
 
 
