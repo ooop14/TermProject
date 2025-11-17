@@ -38,6 +38,12 @@ public class BlockBreaker : MonoBehaviour
     [Tooltip("파괴를 '시작'할 수 있는 타일 (밑동, 줄기만)")]
     public TileBase[] breakableTreeTrunks;
 
+    // ✨ --- [이 변수를 새로 추가하세요!] --- ✨
+    [Header("플레이어 연결")]
+    [Tooltip("플레이어의 Animator 컴포넌트를 연결하세요.")]
+    public Animator playerAnimator; // 1. 플레이어 애니메이터를 받아올 변수
+    // ✨ --------------------------------- ✨
+
     // --- 비공개 변수들 ---
     private Camera mainCamera;
     private float currentBreakTime = 0f;
@@ -65,6 +71,14 @@ public class BlockBreaker : MonoBehaviour
     // Update 함수는 이 한 줄이 끝입니다.
     void Update()
     {
+        if (Mouse.current.leftButton.isPressed)
+        {
+            playerAnimator.SetBool("isBreaking", true);
+        }
+        else
+        {
+            playerAnimator.SetBool("isBreaking", false);
+        }
         HandleBreakingInput();
     }
 
