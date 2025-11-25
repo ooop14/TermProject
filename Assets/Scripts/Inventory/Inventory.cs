@@ -83,6 +83,41 @@ public class Inventory : MonoBehaviour
         return true;
     }
 
+    public void CompactSlots()
+{
+    List<InventorySlotData> temp = new List<InventorySlotData>();
+
+    // 1. 모든 슬롯의 아이템을 리스트에 임시 저장
+    foreach (var slot in slots)
+    {
+        if (!slot.IsEmpty())
+        {
+            temp.Add(new InventorySlotData(slot.GetItemData(), slot.GetItemCount()));
+        }
+    }
+
+    // 2. 모든 슬롯 초기화
+    foreach (var slot in slots)
+        slot.ClearSlot();
+
+    // 3. 앞에서부터 다시 재배치
+    for (int i = 0; i < temp.Count; i++)
+    {
+        slots[i].SetItem(temp[i].item, temp[i].count);
+    }
+}
+
+class InventorySlotData
+{
+    public ItemData item;
+    public int count;
+    public InventorySlotData(ItemData item, int count)
+    {
+        this.item = item;
+        this.count = count;
+    }
+}
+
     // 인벤토리에서 사용한 재료 아이템들을 제거합니다.
     // Inventory.cs
 
@@ -113,6 +148,9 @@ public class Inventory : MonoBehaviour
                     }
                 }
             }
+            CompactSlots();
         }
     }
+
+    
 }
