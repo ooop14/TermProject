@@ -17,6 +17,9 @@ public class Move : MonoBehaviour
     public LayerMask enemyLayer;    // 'Enemy' 레이어
     public int attackDamage = 25;
 
+    public float attackRate = 0.5f; // 0.5초에 한 번만 공격 가능
+    private float nextAttackTime = 0f; // 다음 공격이 가능한 시간
+
     void Start()
     {
         rigid = GetComponent<Rigidbody2D>();
@@ -41,24 +44,27 @@ public class Move : MonoBehaviour
         }
     }
 
+   // Move.cs
+
     void OnAttack()
-{
-    // 1. 공격 애니메이션 실행
-    animator.SetTrigger("Attack");
-
-    // 2. 공격 범위 안에 있는 모든 적을 감지
-    Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
-
-    // 3. 감지된 모든 적에게 데미지 주기
-    foreach(Collider2D enemy in hitEnemies)
     {
-        EnemyHealth health = enemy.GetComponent<EnemyHealth>();
-        if (health != null)
-        {
-            health.TakeDamage(attackDamage);
+        if (Time.time >= nextAttackTime){
+            animator.SetTrigger("Attack");
+
+            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+
+            foreach(Collider2D enemy in hitEnemies)
+            {
+                EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+                if (health != null)
+                {
+                    // ✨ [수정] damage와 함께 'transform(플레이어)'을 넘겨줍니다.
+                    health.TakeDamage(attackDamage, transform);
+                }
+            }
+            nextAttackTime = Time.time + attackRate;
         }
     }
-}
 void OnCraft(InputValue value)
     {
         // CraftingManager에게 "창 열어/닫아!" 명령

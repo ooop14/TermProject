@@ -15,3 +15,4 @@ MonoBehaviour:
   itemName: Dirt
   icon: {fileID: 21300006, guid: 94b9aae5592f1fa48a1f78e8ed6f50f7, type: 3}
   maxStack: 99
+  itemPrefab: {fileID: 6592592729073297204, guid: 345b7a208c0660d498f052044cbb81c6, type: 3}

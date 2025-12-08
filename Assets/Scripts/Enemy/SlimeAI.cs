@@ -74,7 +74,24 @@ public class SlimeAI : MonoBehaviour
             PlayerHealth playerHealth = collision.gameObject.GetComponent<PlayerHealth>();
             if (playerHealth != null)
             {
-                playerHealth.TakeDamage(damage);
+                playerHealth.TakeDamage(damage,transform);
+            }
+        }
+    }
+
+    // 충돌이 '유지'될 때도 때림
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        // Enter와 똑같은 로직입니다.
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            PlayerHealth playerHealth = collision.gameObject.GetComponent<PlayerHealth>();
+            
+            // 플레이어의 TakeDamage 함수는 '무적 상태'라면 알아서 데미지를 무시하므로
+            // 여기서 계속 호출해도 안전합니다.
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage, transform);
             }
         }
     }

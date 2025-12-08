@@ -13,6 +13,13 @@ public class BlockBreaker : MonoBehaviour
     [Header("연결 필수 (아이템)")]
     public GameObject dirtItemPrefab;
     public GameObject woodItemPrefab;
+    public GameObject StoneItemPrefab;
+
+    [Header("타일 데이터 (구분용)")]
+    [Tooltip("프로젝트 창의 Tile_Dirt 에셋을 연결하세요")]
+    public TileBase dirtTile;
+    [Tooltip("프로젝트 창의 Tile_Stone 에셋을 연결하세요")]
+    public TileBase stoneTile;
 
     // ✨ --- 사거리 설정 변수 --- ✨
     [Header("사거리 설정")]
@@ -189,17 +196,28 @@ public class BlockBreaker : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// 단일 블록(흙)을 파괴하고 흙 아이템을 생성합니다.
-    /// </summary>
     private IEnumerator BreakSingleBlockRoutine(Tilemap tilemap, Vector3Int cellPosition)
     {
-        tilemap.SetTile(cellPosition, null);
-        yield return RefreshCollider(tilemap); // 콜라이더 새로고침
+        // 1. 타일을 삭제하기 전에 '무슨 타일인지' 먼저 정보를 가져옵니다. (매우 중요!)
+        TileBase hitTile = tilemap.GetTile(cellPosition);
 
-        if (dirtItemPrefab != null)
+        // 2. 타일맵에서 블록 삭제
+        tilemap.SetTile(cellPosition, null);
+        yield return RefreshCollider(tilemap); 
+
+        // 3. 가져온 타일 정보(hitTile)를 내 데이터와 비교합니다.
+        if (hitTile == dirtTile)
         {
-            Instantiate(dirtItemPrefab, tilemap.GetCellCenterWorld(cellPosition), Quaternion.identity);
+            // 흙 타일이면 -> 흙 아이템 생성
+            if (dirtItemPrefab != null)
+                Instantiate(dirtItemPrefab, tilemap.GetCellCenterWorld(cellPosition), Quaternion.identity);
+        }
+        else if (hitTile == stoneTile)
+        {
+            // 돌 타일이면 -> 돌 아이템 생성
+            if (StoneItemPrefab != null)
+                Instantiate(StoneItemPrefab, tilemap.GetCellCenterWorld(cellPosition), Quaternion.identity);
         }
     }
 

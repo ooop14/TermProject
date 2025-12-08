@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9e3f98761723d947b86bae2eea99079, type: 3}
   m_Name: Wood
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: wood
+  itemName: Wood
   icon: {fileID: 21300004, guid: 96c11b0153c960243b1b1919a489f5ee, type: 3}
   maxStack: 99
+  itemPrefab: {fileID: 6592592729073297204, guid: 49196b2c8168cfe49b7abbd3e199544a, type: 3}
