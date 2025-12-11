@@ -5,6 +5,8 @@ using UnityEngine.UI;
 public class EnemyHealth : MonoBehaviour
 {
     public int maxHealth = 100;
+
+    public int healAmount = 20;// 슬라임을 잡았을 때 회복시켜줄 체력 양
     public int currentHealth;
 
     [Header("UI")]
@@ -79,6 +81,19 @@ public class EnemyHealth : MonoBehaviour
 
     private void Die()
     {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        // 2. 플레이어가 존재한다면 플레이어 스크립트의 Heal 함수를 호출합니다.
+        if (player != null)
+        {
+            PlayerHealth playerScript = player.GetComponent<PlayerHealth>();
+            
+            if (playerScript != null)
+            {
+                playerScript.Heal(healAmount); // 10만큼 회복
+            }
+        }
+
         Destroy(gameObject);
         
         // (선택 사항) 아이템 드랍 로직 등을 여기에 추가

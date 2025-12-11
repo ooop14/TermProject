@@ -10,6 +10,7 @@ public class Move : MonoBehaviour
     public float speed = 5f;
     public float jumpPower = 10f; // 점프 힘 값을 인스펙터에서 조절할 수 있도록 public으로
     bool isGrounded; // 땅에 닿았는지 확인하는 값
+    public GameObject woodSwordPrefab;
     
     [Header("공격 설정")]
     public Transform attackPoint; // 플레이어 앞에 있는 빈 오브젝트

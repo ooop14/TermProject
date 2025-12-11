@@ -51,6 +51,19 @@ public class PlayerHealth : MonoBehaviour
         StartCoroutine(OnHitRoutine(attacker));
     }
 
+    public void Heal(int amount)
+    {
+        currentHealth += amount;
+
+        // 최대 체력을 넘지 않도록 조정
+        if (currentHealth > maxHealth)
+        {
+            currentHealth = maxHealth;
+        }
+
+        UpdateHealthUI();
+    }
+
     IEnumerator OnHitRoutine(Transform attacker)
     {
         isInvincible = true;
